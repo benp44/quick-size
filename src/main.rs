@@ -4,6 +4,7 @@ use std::fs;
 use std::io;
 use std::path;
 use std::result::Result;
+use std::time::Instant;
 use std::vec::Vec;
 
 use colored::*;
@@ -11,20 +12,24 @@ use humansize::{file_size_opts as options, FileSize};
 use sorted_list::SortedList;
 use term_size;
 
-struct DirectoryEntry {
+struct DirectoryEntry
+{
     file_name: String,
     file_type: fs::FileType,
     file_size: usize,
     is_fully_scanned: bool,
 }
 
-impl cmp::PartialEq<DirectoryEntry> for DirectoryEntry {
-    fn eq(&self, other: &Self) -> bool {
+impl cmp::PartialEq<DirectoryEntry> for DirectoryEntry
+{
+    fn eq(&self, other: &Self) -> bool
+    {
         self.file_name == other.file_name
     }
 }
 
-struct OutputData {
+struct OutputData
+{
     file_name: String,
     file_type: fs::FileType,
     file_size: usize,
@@ -33,18 +38,22 @@ struct OutputData {
     is_fully_scanned: bool,
 }
 
-impl cmp::PartialEq<OutputData> for OutputData {
-    fn eq(&self, other: &Self) -> bool {
+impl cmp::PartialEq<OutputData> for OutputData
+{
+    fn eq(&self, other: &Self) -> bool
+    {
         self.file_name == other.file_name
     }
 }
 
-fn show_error(error: io::Error, additional_message: &str) {
+fn show_error(error: io::Error, additional_message: &str)
+{
     print!("{}", "Error: ".red());
     println!("{} {}", error.to_string(), additional_message);
 }
 
-fn get_file_size(file_path: &str) -> Result<(usize, bool), io::Error> {
+fn get_file_size(file_path: &str) -> Result<(usize, bool), io::Error>
+{
     let mut result_size = 0;
     let mut is_result_fully_scanned = true;
 
@@ -83,7 +92,8 @@ fn get_file_size(file_path: &str) -> Result<(usize, bool), io::Error> {
     Ok((result_size, is_result_fully_scanned))
 }
 
-fn get_graph_width() -> usize {
+fn get_graph_width() -> usize
+{
     let result = term_size::dimensions();
     match result {
         Some((terminal_width, _)) => (terminal_width / 3) as usize,
@@ -91,7 +101,8 @@ fn get_graph_width() -> usize {
     }
 }
 
-fn build_graph(file_size: usize, total_size: usize, full_graph_width: usize) -> String {
+fn build_graph(file_size: usize, total_size: usize, full_graph_width: usize) -> String
+{
     let proportion = file_size as f64 / total_size as f64;
     let length_f = proportion * full_graph_width as f64;
     let length = length_f.floor() as usize;
@@ -105,7 +116,8 @@ fn build_graph(file_size: usize, total_size: usize, full_graph_width: usize) -> 
     graph
 }
 
-fn scan_current_directory(directory_entries: &mut Vec<DirectoryEntry>) -> io::Result<()> {
+fn scan_current_directory(directory_entries: &mut Vec<DirectoryEntry>) -> io::Result<()>
+{
     let path = env::current_dir()?;
 
     for entry in fs::read_dir(path)? {
@@ -129,7 +141,8 @@ fn scan_current_directory(directory_entries: &mut Vec<DirectoryEntry>) -> io::Re
     Ok(())
 }
 
-fn print_directory_entries(directory_entries: &Vec<DirectoryEntry>) -> io::Result<()> {
+fn print_directory_entries(directory_entries: &Vec<DirectoryEntry>) -> io::Result<()>
+{
     let mut longest_name = 0;
     let mut longest_size = 0;
     let mut longest_size_readable = 0;
@@ -188,7 +201,10 @@ fn print_directory_entries(directory_entries: &Vec<DirectoryEntry>) -> io::Resul
     Ok(())
 }
 
-fn main() {
+fn main()
+{
+    let now = Instant::now();
+
     let mut directory_entries: Vec<DirectoryEntry> = Vec::new();
     let result = scan_current_directory(&mut directory_entries);
 
@@ -203,4 +219,7 @@ fn main() {
         show_error(result.unwrap_err(), "");
         return;
     }
+
+    println!("");
+    println!("Took {}ms", now.elapsed().as_millis());
 }
