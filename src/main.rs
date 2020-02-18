@@ -84,10 +84,11 @@ fn get_file_size(file_path: &str) -> Result<(usize, bool), io::Error> {
 }
 
 fn get_full_graph_width() -> usize {
-    let (terminal_width, _) = term_size::dimensions().unwrap();
-    let graph_width = (terminal_width / 3) as usize;
-
-    graph_width
+    let result = term_size::dimensions();
+    match result {
+        Some((terminal_width, _)) => (terminal_width / 3) as usize,
+        None => 20 as usize,
+    }
 }
 
 fn build_graph(file_size: usize, total_size: usize, full_graph_width: usize) -> String {
