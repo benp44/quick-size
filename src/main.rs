@@ -83,7 +83,7 @@ fn get_file_size(file_path: &str) -> Result<(usize, bool), io::Error> {
     Ok((result_size, is_result_fully_scanned))
 }
 
-fn get_full_graph_width() -> usize {
+fn get_graph_width() -> usize {
     let result = term_size::dimensions();
     match result {
         Some((terminal_width, _)) => (terminal_width / 3) as usize,
@@ -105,10 +105,8 @@ fn build_graph(file_size: usize, total_size: usize, full_graph_width: usize) -> 
     graph
 }
 
-fn scan_current_directory() -> io::Result<()> {
+fn scan_current_directory(directory_entries: &mut Vec<DirectoryEntry>) -> io::Result<()> {
     let path = env::current_dir()?;
-
-    let mut directory_entries: Vec<DirectoryEntry> = Vec::new();
 
     for entry in fs::read_dir(path)? {
         let entry = entry?;
@@ -128,16 +126,19 @@ fn scan_current_directory() -> io::Result<()> {
         directory_entries.push(entry);
     }
 
-    // Process
+    Ok(())
+}
 
-    let mut output_data_entries: SortedList<usize, OutputData> = SortedList::new();
+fn print_directory_entries(directory_entries: &Vec<DirectoryEntry>) -> io::Result<()> {
     let mut longest_name = 0;
     let mut longest_size = 0;
     let mut longest_size_readable = 0;
     let mut total_size = 0;
 
+    let mut output_data_entries: SortedList<usize, OutputData> = SortedList::new();
+
     for directory_entry in directory_entries {
-        let name = directory_entry.file_name;
+        let name = directory_entry.file_name.to_string();
         let size = directory_entry.file_size;
         let size_readable = directory_entry.file_size.file_size(options::CONVENTIONAL).unwrap();
 
@@ -158,12 +159,9 @@ fn scan_current_directory() -> io::Result<()> {
         output_data_entries.insert(size, entry);
     }
 
-    // Print
-
-    let full_graph_width = get_full_graph_width();
+    let full_graph_width = get_graph_width();
 
     for (_, output_entry) in output_data_entries.iter().rev() {
-
         let mut output_line = String::new();
 
         output_line += &format!("{:name_width$} ", output_entry.file_name, name_width = longest_name);
@@ -191,10 +189,18 @@ fn scan_current_directory() -> io::Result<()> {
 }
 
 fn main() {
-    let result = scan_current_directory();
+    let mut directory_entries: Vec<DirectoryEntry> = Vec::new();
+    let result = scan_current_directory(&mut directory_entries);
 
-    match result {
-        Ok(_v) => (),
-        Err(e) => show_error(e, ""),
+    if result.is_err() {
+        show_error(result.unwrap_err(), "");
+        return;
+    }
+
+    let result = print_directory_entries(&directory_entries);
+
+    if result.is_err() {
+        show_error(result.unwrap_err(), "");
+        return;
     }
 }
