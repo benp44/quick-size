@@ -6,7 +6,7 @@ use std::path;
 use std::result::Result;
 use std::vec::Vec;
 
-use colour;
+use colored::*;
 use humansize::{file_size_opts as options, FileSize};
 use sorted_list::SortedList;
 use term_size;
@@ -40,7 +40,7 @@ impl cmp::PartialEq<OutputData> for OutputData {
 }
 
 fn show_error(error: io::Error, additional_message: &str) {
-    colour::red!("Error: ");
+    print!("{}", "Error: ".red());
     println!("{} {}", error.to_string(), additional_message);
 }
 
@@ -178,7 +178,7 @@ fn scan_current_directory() -> io::Result<()> {
         output_line += &format!("{:size_readable_width$}", output_entry.file_size_readable, size_readable_width = longest_size_readable);
 
         if output_entry.file_type.is_dir() {
-            colour::blue!("{}", output_line);
+            print!("{}", output_line.blue());
         } else {
             print!("{}", output_line);
         }
