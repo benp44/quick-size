@@ -1,0 +1,11 @@
+[package]
+name = "quick-size"
+version = "0.1.0"
+authors = ["Ben P <18192544+benp44@users.noreply.github.com>"]
+edition = "2018"
+
+[dependencies]
+colour = "0.3.0"
+sorted-list = "0.2.0"
+term_size = "0.3.1"
+humansize = "1.0.1"
