@@ -55,14 +55,14 @@ fn show_error(error: io::Error, additional_message: &str)
     println!("{} {} {}", "Error: ".red(), error.to_string(), additional_message);
 }
 
-fn get_file_size(file_path: &str) -> Result<usize, io::Error>
+fn get_size_of_file(file_path: &str) -> Result<usize, io::Error>
 {
     let file_metadata = fs::metadata(file_path)?;
 
     Ok(file_metadata.len() as usize)
 }
 
-fn get_directory_size(file_path: &str) -> Result<(usize, bool), io::Error>
+fn get_size_of_directory(file_path: &str) -> Result<(usize, bool), io::Error>
 {
     let mut result_size = 0;
     let mut is_result_fully_scanned = true;
@@ -83,7 +83,7 @@ fn get_directory_size(file_path: &str) -> Result<(usize, bool), io::Error>
                 GLOBAL_THREAD_COUNT.fetch_add(1, Ordering::Relaxed);
 
                 let handler: thread::JoinHandle<Result<(usize, bool), io::Error>> = thread::spawn(move || {
-                    let result = get_item_size(&directory_entry_path);
+                    let result = get_size_of_item(&directory_entry_path);
 
                     GLOBAL_THREAD_COUNT.fetch_sub(1, Ordering::Relaxed);
 
@@ -92,7 +92,7 @@ fn get_directory_size(file_path: &str) -> Result<(usize, bool), io::Error>
 
                 thread_handles.push(handler);
             } else {
-                let result = get_item_size(&directory_entry_path);
+                let result = get_size_of_item(&directory_entry_path);
                 if result.is_ok() {
                     let (size, is_fully_scanned) = result.unwrap();
                     result_size += size;
@@ -120,7 +120,7 @@ fn get_directory_size(file_path: &str) -> Result<(usize, bool), io::Error>
     Ok((result_size, is_result_fully_scanned))
 }
 
-fn get_item_size(file_path: &str) -> Result<(usize, bool), io::Error>
+fn get_size_of_item(file_path: &str) -> Result<(usize, bool), io::Error>
 {
     let mut result_size = 0;
     let mut is_result_fully_scanned = true;
@@ -130,9 +130,9 @@ fn get_item_size(file_path: &str) -> Result<(usize, bool), io::Error>
 
     if file_type.is_symlink() == false {
         if file_type.is_file() {
-            result_size += get_file_size(&file_path)?;
+            result_size += get_size_of_file(&file_path)?;
         } else if file_type.is_dir() {
-            let (size, is_fully_scanned) = get_directory_size(file_path)?;
+            let (size, is_fully_scanned) = get_size_of_directory(file_path)?;
             result_size += size;
             is_result_fully_scanned &= is_fully_scanned;
         }
@@ -175,7 +175,7 @@ fn scan_current_directory(directory_entries: &mut Vec<DirectoryEntry>) -> io::Re
         let name = path.file_name().unwrap().to_str().unwrap();
         let metadata = fs::metadata(&path)?;
 
-        let (file_size, is_fully_scanned) = get_item_size(name)?;
+        let (file_size, is_fully_scanned) = get_size_of_item(name)?;
 
         let entry = DirectoryEntry {
             file_name: name.to_string(),
