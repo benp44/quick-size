@@ -7,6 +7,7 @@ Written in Rust.
 
 TODO:
 
+* Tidy up printing code
 * Distinguish between stdout and stderr
 * Validate results against other tools
 * Allow directory to scan to be provided as an argument
