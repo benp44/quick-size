@@ -54,12 +54,12 @@ impl cmp::PartialEq<OutputData> for OutputData
 
 fn show_error(error: &io::Error)
 {
-    println!("{} {}", "Error: ".red(), error.to_string());
+    eprintln!("{} {}", "Error: ".red(), error.to_string());
 }
 
 fn show_error_for_path(error: &io::Error, file_path: &path::PathBuf)
 {
-    println!("{} {} {:?}", "Error: ".red(), error.to_string(), file_path);
+    eprintln!("{} {} {:?}", "Error: ".red(), error.to_string(), file_path);
 }
 
 fn get_size_of_file(file_path: &path::PathBuf) -> Result<usize, io::Error>
@@ -397,5 +397,6 @@ fn main()
         return;
     }
 
-    println!("Took {}ms", now.elapsed().as_millis());
+    eprintln!("");
+    eprintln!("Took {}ms", now.elapsed().as_millis());
 }
