@@ -3,10 +3,10 @@ use std::env;
 use std::fs;
 use std::io;
 use std::result::Result;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::thread;
 use std::time;
 use std::vec::Vec;
-use std::thread;
-use std::sync::atomic::{AtomicUsize, Ordering};
 
 use colored::*;
 use humansize::{file_size_opts as options, FileSize};
@@ -52,31 +52,8 @@ impl cmp::PartialEq<OutputData> for OutputData
 
 fn show_error(error: io::Error, additional_message: &str)
 {
-    print!("{}", "Error: ".red());
-    println!("{} {}", error.to_string(), additional_message);
+    println!("{} {} {}", "Error: ".red(), error.to_string(), additional_message);
 }
-
-// fn scan_item(entry: fs::DirEntry) -> thread::JoinHandle<DirectoryEntry>
-// {
-//     let handler: thread::JoinHandle<DirectoryEntry> = thread::spawn(move || {
-//         let path = entry.path();
-//         let name = path.file_name().unwrap().to_str().unwrap();
-//         let metadata = fs::metadata(&path).unwrap();
-
-//         let (file_size, is_fully_scanned) = get_item_size(name).unwrap();
-
-//         let entry = DirectoryEntry {
-//             file_name: name.to_string(),
-//             file_type: metadata.file_type(),
-//             file_size: file_size,
-//             is_fully_scanned: is_fully_scanned,
-//         };
-
-//         entry
-//     });
-
-//     handler
-// }
 
 fn get_file_size(file_path: &str) -> Result<usize, io::Error>
 {
@@ -100,29 +77,25 @@ fn get_directory_size(file_path: &str) -> Result<(usize, bool), io::Error>
 
     let result = fs::read_dir(file_path);
     if result.is_ok() {
-
         let mut thread_handles: Vec<thread::JoinHandle<Result<(usize, bool), io::Error>>> = Vec::new();
 
         for contained_file in result.unwrap() {
-
             let contained_file = contained_file?;
 
             if GLOBAL_THREAD_COUNT.load(Ordering::Relaxed) < MAX_THREADS {
-
+                println!("New thread");
                 GLOBAL_THREAD_COUNT.fetch_add(1, Ordering::Relaxed);
 
-                let handler: thread::JoinHandle<Result<(usize, bool), io::Error>> = thread::spawn(move || {
+                let handler: thread::JoinHandle<Result<(usize, bool), io::Error>> = thread::spawn(|| {
                     let result = process_directory_item(contained_file);
 
                     GLOBAL_THREAD_COUNT.fetch_sub(1, Ordering::Relaxed);
 
                     result
                 });
-    
-                thread_handles.push(handler);        
-            }
-            else
-            {
+
+                thread_handles.push(handler);
+            } else {
                 let result = process_directory_item(contained_file);
                 if result.is_ok() {
                     let (size, is_fully_scanned) = result.unwrap();
@@ -134,7 +107,7 @@ fn get_directory_size(file_path: &str) -> Result<(usize, bool), io::Error>
 
         for thread_handle in thread_handles {
             let result = thread_handle.join();
-            if result.is_ok(){
+            if result.is_ok() {
                 let inner_result = result.unwrap();
                 if inner_result.is_ok() {
                     let (size, is_fully_scanned) = inner_result.unwrap();
@@ -143,7 +116,6 @@ fn get_directory_size(file_path: &str) -> Result<(usize, bool), io::Error>
                 }
             }
         }
-
     } else {
         is_result_fully_scanned = false;
         show_error(result.err().unwrap(), file_path);
@@ -234,7 +206,7 @@ fn print_directory_entries(directory_entries: &Vec<DirectoryEntry>) -> io::Resul
     for directory_entry in directory_entries {
         let name = directory_entry.file_name.to_string();
         let size = directory_entry.file_size;
-        let size_readable = directory_entry.file_size.file_size(options::CONVENTIONAL).unwrap();
+        let size_readable = directory_entry.file_size.file_size(options::DECIMAL).unwrap();
 
         let entry = OutputData {
             file_name: name,

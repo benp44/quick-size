@@ -10,5 +10,8 @@ TODO:
 * Validate results against other tools
 * Evaluate approach for running concurrently
 * Sort out appearance of directories vs files - icons?
-* Command line options for results appearance
+* Command line options:
+    Show/hide different values
+    Show/hide graph
+    Format for human readable values
 * Allow directory to scan to be provided as an argument
