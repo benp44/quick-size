@@ -14,7 +14,7 @@ use sorted_list::SortedList;
 use term_size;
 
 static GLOBAL_THREAD_COUNT: AtomicUsize = AtomicUsize::new(0);
-static MAX_THREADS: usize = 10;
+static MAX_THREADS: usize = 8;
 
 struct DirectoryEntry
 {
@@ -112,7 +112,11 @@ fn get_directory_size(file_path: &str) -> Result<(usize, bool), io::Error>
                 GLOBAL_THREAD_COUNT.fetch_add(1, Ordering::Relaxed);
 
                 let handler: thread::JoinHandle<Result<(usize, bool), io::Error>> = thread::spawn(move || {
-                    process_directory_item(contained_file)
+                    let result = process_directory_item(contained_file);
+
+                    GLOBAL_THREAD_COUNT.fetch_sub(1, Ordering::Relaxed);
+
+                    result
                 });
     
                 thread_handles.push(handler);        
