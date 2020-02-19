@@ -171,16 +171,16 @@ fn get_graph_width() -> usize
     }
 }
 
-fn build_graph(file_size: usize, total_size: usize, full_graph_width: usize) -> String
+fn build_graph(file_size: usize, total_size: usize, full_graph_width: usize, start_char: char, line_char: char) -> String
 {
     let proportion = file_size as f64 / total_size as f64;
     let length_f = proportion * full_graph_width as f64;
     let length = length_f.floor() as usize;
 
-    let mut graph = String::from("▕");
+    let mut graph = String::from(start_char.to_string());
 
     for _ in 0..length {
-        graph.push('█');
+        graph.push(line_char);
     }
 
     graph
@@ -240,14 +240,16 @@ fn print_directory_entries(directory_entries: &Vec<DirectoryEntry>) -> io::Resul
     let mut longest_name = 0;
     let mut longest_size = 0;
     let mut longest_size_readable = 0;
+
     let mut total_size = 0;
+    let mut total_is_fully_scanned = true;
 
     let mut output_data_entries: SortedList<usize, OutputData> = SortedList::new();
 
-    let custom_options = options::FileSizeOpts {
+    let human_readable_options = options::FileSizeOpts {
         divider: options::Kilo::Binary,
         units: options::Kilo::Decimal,
-        decimal_places: 0,
+        decimal_places: 1,
         decimal_zeroes: 0,
         fixed_at: options::FixedAt::No,
         long_units: false,
@@ -259,7 +261,7 @@ fn print_directory_entries(directory_entries: &Vec<DirectoryEntry>) -> io::Resul
     for directory_entry in directory_entries {
         let name = directory_entry.file_name.to_string();
         let size = directory_entry.file_size;
-        let size_readable = directory_entry.file_size.file_size(&custom_options).unwrap();
+        let size_readable = directory_entry.file_size.file_size(&human_readable_options).unwrap();
 
         let entry = OutputData {
             file_name: name,
@@ -273,39 +275,81 @@ fn print_directory_entries(directory_entries: &Vec<DirectoryEntry>) -> io::Resul
         longest_name = cmp::max(longest_name, entry.file_name.len());
         longest_size = cmp::max(longest_size, entry.file_size_string.len());
         longest_size_readable = cmp::max(longest_size_readable, entry.file_size_readable.len());
-        total_size += size;
 
         output_data_entries.insert(size, entry);
-    }
 
+        total_size += size;
+        total_is_fully_scanned &= directory_entry.is_fully_scanned;
+    }
+   
     let full_graph_width = get_graph_width();
 
+    print_summary_entry(total_is_fully_scanned,
+                        total_size,
+                        &total_size.file_size(&human_readable_options).unwrap(),
+                        full_graph_width,
+                        longest_name,
+                        longest_size,
+                        longest_size_readable);
+
     for (_, output_entry) in output_data_entries.iter().rev() {
-        let mut output_line = String::new();
-
-        if output_entry.is_directory {
-            output_line += &format!("{:name_width$} ", output_entry.file_name, name_width = longest_name).yellow().bold().to_string();
-        } else {
-            output_line += &format!("{:name_width$} ", output_entry.file_name, name_width = longest_name);
-        }
-        
-        output_line += &format!("{:>size_width$} ", output_entry.file_size, size_width = longest_size);
-
-        if output_entry.is_fully_scanned {
-            output_line += " ";
-        } else {
-            output_line += "?";
-        }
-
-        output_line += &format!("{} ", build_graph(output_entry.file_size, total_size, full_graph_width));
-        output_line += &format!("{:size_readable_width$}", output_entry.file_size_readable, size_readable_width = longest_size_readable);
-
-        print!("{}", output_line);
-
-        println!("");
+        print_entry(output_entry.is_directory, 
+                    &output_entry.file_name,
+                    &output_entry.file_size_string,
+                    output_entry.is_fully_scanned,
+                    output_entry.file_size,
+                    &output_entry.file_size_readable,
+                    total_size,
+                    full_graph_width,
+                    longest_name,
+                    longest_size,
+                    longest_size_readable);
     }
 
+
     Ok(())
+}
+
+fn print_summary_entry(is_fully_scanned: bool, total_size: usize, total_size_readable: &str, full_graph_width: usize, longest_name: usize, longest_size: usize, longest_size_readable: usize) {
+    let mut output_line = String::new();
+
+    output_line += &format!("{:name_width$} ", "Total", name_width = longest_name).bold().to_string();
+    output_line += &format!("{:>size_width$} ", total_size, size_width = longest_size);
+
+    if is_fully_scanned {
+        output_line += " ";
+    } else {
+        output_line += &"?".red().to_string();
+    }
+
+    output_line += &format!("{} ", build_graph(total_size, total_size, full_graph_width, '▕', '━'));
+
+    output_line += &format!("{:size_readable_width$}", total_size_readable, size_readable_width = longest_size_readable);
+
+    println!("{}", output_line.blue().to_string());
+}
+
+fn print_entry(is_directory: bool, file_name: &str, file_size_string: &str, is_fully_scanned: bool, file_size: usize, file_size_readable: &str, total_size: usize, full_graph_width: usize, longest_name: usize, longest_size: usize, longest_size_readable: usize) {
+    let mut output_line = String::new();
+
+    if is_directory {
+        output_line += &format!("{:name_width$} ", file_name, name_width = longest_name).yellow().bold().to_string();
+    } else {
+        output_line += &format!("{:name_width$} ", file_name, name_width = longest_name);
+    }
+    
+    output_line += &format!("{:>size_width$} ", file_size_string, size_width = longest_size);
+
+    if is_fully_scanned {
+        output_line += " ";
+    } else {
+        output_line += &"?".red().to_string();
+    }
+
+    output_line += &format!("{} ", build_graph(file_size, total_size, full_graph_width, '▕', '╌'));
+    output_line += &format!("{:size_readable_width$}", file_size_readable, size_readable_width = longest_size_readable);
+
+    println!("{}", output_line);
 }
 
 fn main()
@@ -327,6 +371,5 @@ fn main()
         return;
     }
 
-    println!("");
     println!("Took {}ms", now.elapsed().as_millis());
 }
