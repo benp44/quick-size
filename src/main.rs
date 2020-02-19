@@ -2,15 +2,19 @@ use std::cmp;
 use std::env;
 use std::fs;
 use std::io;
-use std::path;
 use std::result::Result;
-use std::time::Instant;
+use std::time;
 use std::vec::Vec;
+use std::thread;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use colored::*;
 use humansize::{file_size_opts as options, FileSize};
 use sorted_list::SortedList;
 use term_size;
+
+static GLOBAL_THREAD_COUNT: AtomicUsize = AtomicUsize::new(0);
+static MAX_THREADS: usize = 10;
 
 struct DirectoryEntry
 {
@@ -52,40 +56,113 @@ fn show_error(error: io::Error, additional_message: &str)
     println!("{} {}", error.to_string(), additional_message);
 }
 
-fn get_file_size(file_path: &str) -> Result<(usize, bool), io::Error>
+// fn scan_item(entry: fs::DirEntry) -> thread::JoinHandle<DirectoryEntry>
+// {
+//     let handler: thread::JoinHandle<DirectoryEntry> = thread::spawn(move || {
+//         let path = entry.path();
+//         let name = path.file_name().unwrap().to_str().unwrap();
+//         let metadata = fs::metadata(&path).unwrap();
+
+//         let (file_size, is_fully_scanned) = get_item_size(name).unwrap();
+
+//         let entry = DirectoryEntry {
+//             file_name: name.to_string(),
+//             file_type: metadata.file_type(),
+//             file_size: file_size,
+//             is_fully_scanned: is_fully_scanned,
+//         };
+
+//         entry
+//     });
+
+//     handler
+// }
+
+fn get_file_size(file_path: &str) -> Result<usize, io::Error>
+{
+    let file_metadata = fs::metadata(file_path)?;
+
+    Ok(file_metadata.len() as usize)
+}
+
+fn process_directory_item(contained_file: fs::DirEntry) -> Result<(usize, bool), io::Error>
+{
+    let contained_file_path = contained_file.path();
+    let contained_file_path_str = contained_file_path.to_str().unwrap();
+
+    get_item_size(contained_file_path_str)
+}
+
+fn get_directory_size(file_path: &str) -> Result<(usize, bool), io::Error>
 {
     let mut result_size = 0;
     let mut is_result_fully_scanned = true;
 
-    let path_wrapper = path::Path::new(file_path);
+    let result = fs::read_dir(file_path);
+    if result.is_ok() {
 
-    if path_wrapper.is_file() {
-        let file_metadata = fs::metadata(path_wrapper)?;
-        result_size += file_metadata.len() as usize;
-    } else if path_wrapper.is_dir() {
-        let result = fs::read_dir(file_path);
+        let mut thread_handles: Vec<thread::JoinHandle<Result<(usize, bool), io::Error>>> = Vec::new();
 
-        if result.is_ok() {
-            for contained_file in result.unwrap() {
-                let contained_file = contained_file?;
-                let contained_file_path = contained_file.path();
-                let contained_file_path_str = contained_file_path.to_str().unwrap();
-                let file_type = contained_file.file_type()?;
+        for contained_file in result.unwrap() {
 
-                if file_type.is_symlink() == false {
-                    if file_type.is_file() {
-                        let file_metadata = fs::metadata(&contained_file_path)?;
-                        result_size += file_metadata.len() as usize;
-                    } else if file_type.is_dir() {
-                        let (size, is_fully_scanned) = get_file_size(contained_file_path_str)?;
-                        result_size += size;
-                        is_result_fully_scanned &= is_fully_scanned;
-                    }
+            let contained_file = contained_file?;
+
+            if GLOBAL_THREAD_COUNT.load(Ordering::Relaxed) < MAX_THREADS {
+
+                GLOBAL_THREAD_COUNT.fetch_add(1, Ordering::Relaxed);
+
+                let handler: thread::JoinHandle<Result<(usize, bool), io::Error>> = thread::spawn(move || {
+                    process_directory_item(contained_file)
+                });
+    
+                thread_handles.push(handler);        
+            }
+            else
+            {
+                let result = process_directory_item(contained_file);
+                if result.is_ok() {
+                    let (size, is_fully_scanned) = result.unwrap();
+                    result_size += size;
+                    is_result_fully_scanned &= is_fully_scanned;
                 }
             }
-        } else {
-            is_result_fully_scanned = false;
-            show_error(result.err().unwrap(), file_path);
+        }
+
+        for thread_handle in thread_handles {
+            let result = thread_handle.join();
+            if result.is_ok(){
+                let inner_result = result.unwrap();
+                if inner_result.is_ok() {
+                    let (size, is_fully_scanned) = inner_result.unwrap();
+                    result_size += size;
+                    is_result_fully_scanned &= is_fully_scanned;
+                }
+            }
+        }
+
+    } else {
+        is_result_fully_scanned = false;
+        show_error(result.err().unwrap(), file_path);
+    }
+
+    Ok((result_size, is_result_fully_scanned))
+}
+
+fn get_item_size(file_path: &str) -> Result<(usize, bool), io::Error>
+{
+    let mut result_size = 0;
+    let mut is_result_fully_scanned = true;
+
+    let metadata = fs::symlink_metadata(file_path)?;
+    let file_type = metadata.file_type();
+
+    if file_type.is_symlink() == false {
+        if file_type.is_file() {
+            result_size += get_file_size(&file_path)?;
+        } else if file_type.is_dir() {
+            let (size, is_fully_scanned) = get_directory_size(file_path)?;
+            result_size += size;
+            is_result_fully_scanned &= is_fully_scanned;
         }
     }
 
@@ -126,7 +203,7 @@ fn scan_current_directory(directory_entries: &mut Vec<DirectoryEntry>) -> io::Re
         let name = path.file_name().unwrap().to_str().unwrap();
         let metadata = fs::metadata(&path)?;
 
-        let (file_size, is_fully_scanned) = get_file_size(name)?;
+        let (file_size, is_fully_scanned) = get_item_size(name)?;
 
         let entry = DirectoryEntry {
             file_name: name.to_string(),
@@ -203,7 +280,7 @@ fn print_directory_entries(directory_entries: &Vec<DirectoryEntry>) -> io::Resul
 
 fn main()
 {
-    let now = Instant::now();
+    let now = time::Instant::now();
 
     let mut directory_entries: Vec<DirectoryEntry> = Vec::new();
     let result = scan_current_directory(&mut directory_entries);
