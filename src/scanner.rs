@@ -4,16 +4,16 @@ use std::vec::Vec;
 use std::thread;
 use std::io;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::path;
+use std::path::PathBuf;
 use std::result::Result;
 
-use super::directory_entry;
+use super::directory_entry::DirectoryEntry;
 use super::error_handler::{show_error_for_path, show_error};
 
 static GLOBAL_THREAD_COUNT: AtomicUsize = AtomicUsize::new(0);
 const MAX_THREADS: usize = 8;
 
-pub fn scan_current_directory(directory_entries: &mut Vec<directory_entry::DirectoryEntry>) -> io::Result<()>
+pub fn scan_current_directory(directory_entries: &mut Vec<DirectoryEntry>) -> io::Result<()>
 {
     let current_path = env::current_dir()?;
 
@@ -48,7 +48,7 @@ pub fn scan_current_directory(directory_entries: &mut Vec<directory_entry::Direc
             show_error(&entry.unwrap_err());
         }
 
-        let entry = directory_entry::DirectoryEntry {
+        let entry = DirectoryEntry {
             file_name: file_name,
             is_directory: is_directory,
             file_size: file_size,
@@ -62,14 +62,14 @@ pub fn scan_current_directory(directory_entries: &mut Vec<directory_entry::Direc
 }
 
 
-fn get_size_of_file(file_path: &path::PathBuf) -> Result<usize, io::Error>
+fn get_size_of_file(file_path: &PathBuf) -> Result<usize, io::Error>
 {
     let file_metadata = fs::metadata(file_path)?;
 
     Ok(file_metadata.len() as usize)
 }
 
-fn get_size_of_directory(file_path: &path::PathBuf) -> Result<(usize, bool), io::Error>
+fn get_size_of_directory(file_path: &PathBuf) -> Result<(usize, bool), io::Error>
 {
     let mut result_size = 0;
     let mut is_result_fully_scanned = true;
@@ -140,7 +140,7 @@ fn get_size_of_directory(file_path: &path::PathBuf) -> Result<(usize, bool), io:
     Ok((result_size, is_result_fully_scanned))
 }
 
-fn get_size_of_item(file_path: &path::PathBuf) -> Result<(usize, bool), io::Error>
+fn get_size_of_item(file_path: &PathBuf) -> Result<(usize, bool), io::Error>
 {
     let mut result_size = 0;    
     let mut is_result_fully_scanned = true;

@@ -1,4 +1,4 @@
-use std::time;
+use std::time::Instant;
 use std::vec::Vec;
 
 mod error_handler;
@@ -9,7 +9,7 @@ mod scanner;
 
 fn main()
 {
-    let now = time::Instant::now();
+    let now = Instant::now();
 
     let mut directory_entries = Vec::new();
     let result = scanner::scan_current_directory(&mut directory_entries);

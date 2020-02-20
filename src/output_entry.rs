@@ -1,4 +1,4 @@
-use std::cmp;
+use std::cmp::PartialEq;
 
 pub struct OutputEntry
 {
@@ -10,7 +10,7 @@ pub struct OutputEntry
     pub is_fully_scanned: bool,
 }
 
-impl cmp::PartialEq<OutputEntry> for OutputEntry
+impl PartialEq<OutputEntry> for OutputEntry
 {
     fn eq(&self, other: &Self) -> bool
     {

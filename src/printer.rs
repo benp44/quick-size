@@ -3,17 +3,17 @@ use std::io;
 use std::vec::Vec;
 
 use colored::*;
-use humansize::file_size_opts;
+use humansize::file_size_opts::{FileSizeOpts, Kilo, FixedAt};
 use humansize::FileSize;
 use sorted_list::SortedList;
 use term_size;
 
-use super::directory_entry;
-use super::output_entry;
+use super::directory_entry::DirectoryEntry;
+use super::output_entry::OutputEntry;
 
 const TOTAL_NAME: &str = "Total";
 
-pub fn print_directory_entries(directory_entries: &Vec<directory_entry::DirectoryEntry>) -> io::Result<()>
+pub fn print_directory_entries(directory_entries: &Vec<DirectoryEntry>) -> io::Result<()>
 {
     let mut longest_name = 0;
     let mut longest_size = 0;
@@ -22,14 +22,14 @@ pub fn print_directory_entries(directory_entries: &Vec<directory_entry::Director
     let mut total_size = 0;
     let mut total_is_fully_scanned = true;
 
-    let mut output_data_entries: SortedList<usize, output_entry::OutputEntry> = SortedList::new();
+    let mut output_data_entries: SortedList<usize, OutputEntry> = SortedList::new();
 
-    let human_readable_options = file_size_opts::FileSizeOpts {
-        divider: file_size_opts::Kilo::Binary,
-        units: file_size_opts::Kilo::Decimal,
+    let human_readable_options = FileSizeOpts {
+        divider: Kilo::Binary,
+        units: Kilo::Decimal,
         decimal_places: 1,
         decimal_zeroes: 0,
-        fixed_at: file_size_opts::FixedAt::No,
+        fixed_at: FixedAt::No,
         long_units: false,
         space: true,
         suffix: "",
@@ -41,7 +41,7 @@ pub fn print_directory_entries(directory_entries: &Vec<directory_entry::Director
         let size = directory_entry.file_size;
         let size_readable = directory_entry.file_size.file_size(&human_readable_options).unwrap();
 
-        let entry = output_entry::OutputEntry {
+        let entry = OutputEntry {
             file_name: name,
             is_directory: directory_entry.is_directory,
             file_size: size,
