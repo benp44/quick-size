@@ -1,6 +1,6 @@
+use colored::*;
 use std::io;
 use std::path::PathBuf;
-use colored::*;
 
 pub fn show_error(error: &io::Error)
 {

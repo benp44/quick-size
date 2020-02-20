@@ -1,15 +1,13 @@
+use super::directory_entry::DirectoryEntry;
+use super::output_entry::OutputEntry;
+use colored::*;
+use humansize::file_size_opts::{FileSizeOpts, FixedAt, Kilo};
+use humansize::FileSize;
+use sorted_list::SortedList;
 use std::cmp;
 use std::io;
 use std::vec::Vec;
-
-use colored::*;
-use humansize::file_size_opts::{FileSizeOpts, Kilo, FixedAt};
-use humansize::FileSize;
-use sorted_list::SortedList;
 use term_size;
-
-use super::directory_entry::DirectoryEntry;
-use super::output_entry::OutputEntry;
 
 const TOTAL_NAME: &str = "Total";
 

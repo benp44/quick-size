@@ -1,14 +1,13 @@
-use std::fs;
+use super::directory_entry::DirectoryEntry;
+use super::error_handler::{show_error, show_error_for_path};
 use std::env;
-use std::vec::Vec;
-use std::thread;
+use std::fs;
 use std::io;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::path::PathBuf;
 use std::result::Result;
-
-use super::directory_entry::DirectoryEntry;
-use super::error_handler::{show_error_for_path, show_error};
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::thread;
+use std::vec::Vec;
 
 static GLOBAL_THREAD_COUNT: AtomicUsize = AtomicUsize::new(0);
 const MAX_THREADS: usize = 8;
@@ -60,7 +59,6 @@ pub fn scan_current_directory(directory_entries: &mut Vec<DirectoryEntry>) -> io
 
     Ok(())
 }
-
 
 fn get_size_of_file(file_path: &PathBuf) -> Result<usize, io::Error>
 {
@@ -142,7 +140,7 @@ fn get_size_of_directory(file_path: &PathBuf) -> Result<(usize, bool), io::Error
 
 fn get_size_of_item(file_path: &PathBuf) -> Result<(usize, bool), io::Error>
 {
-    let mut result_size = 0;    
+    let mut result_size = 0;
     let mut is_result_fully_scanned = true;
 
     let metadata = fs::symlink_metadata(&file_path)?;

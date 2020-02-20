@@ -1,9 +1,9 @@
 use std::time::Instant;
 use std::vec::Vec;
 
+mod directory_entry;
 mod error_handler;
 mod output_entry;
-mod directory_entry;
 mod printer;
 mod scanner;
 
