@@ -133,9 +133,9 @@ fn print_summary_entry(is_fully_scanned: bool, total_size: usize, total_size_rea
     output_line += &format!("{:>size_width$} ", total_size, size_width = longest_size);
 
     if is_fully_scanned {
-        output_line += " ";
+        output_line += "  ";
     } else {
-        output_line += &"?".red().to_string();
+        output_line += &"? ".red().to_string();
     }
 
     output_line += &format!("{:>size_readable_width$}", total_size_readable, size_readable_width = longest_size_readable);
@@ -169,9 +169,9 @@ fn print_entry(
     output_line += &format!("{:>size_width$} ", file_size_string, size_width = longest_size);
 
     if is_fully_scanned {
-        output_line += " ";
+        output_line += "  ";
     } else {
-        output_line += &"?".red().to_string();
+        output_line += &"? ".red().to_string();
     }
 
     output_line += &format!("{:>size_readable_width$}", file_size_readable, size_readable_width = longest_size_readable);
