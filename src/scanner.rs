@@ -1,5 +1,4 @@
-use super::directory_entry::DirectoryEntry;
-use super::error_handler::{show_error, show_error_for_path};
+use num_cpus;
 use std::env;
 use std::fs;
 use std::io;
@@ -8,12 +7,18 @@ use std::result::Result;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread;
 use std::vec::Vec;
+use super::directory_entry::DirectoryEntry;
+use super::error_handler::{show_error, show_error_for_path};
+
+const DEFAULT_MAX_THREAD_COUNT: usize = 4;
 
 static GLOBAL_THREAD_COUNT: AtomicUsize = AtomicUsize::new(0);
-const MAX_THREADS: usize = 8;
+static MAX_THREAD_COUNT: AtomicUsize = AtomicUsize::new(DEFAULT_MAX_THREAD_COUNT);
 
 pub fn scan_current_directory(directory_entries: &mut Vec<DirectoryEntry>) -> io::Result<()>
 {
+    set_thread_count();
+
     let current_path = env::current_dir()?;
 
     for entry in fs::read_dir(current_path)? {
@@ -60,6 +65,12 @@ pub fn scan_current_directory(directory_entries: &mut Vec<DirectoryEntry>) -> io
     Ok(())
 }
 
+fn set_thread_count()
+{
+    let cpu_count = num_cpus::get();
+    MAX_THREAD_COUNT.store(cpu_count, Ordering::Relaxed);
+}
+
 fn get_size_of_file(file_path: &PathBuf) -> Result<usize, io::Error>
 {
     let file_metadata = fs::metadata(file_path)?;
@@ -93,7 +104,7 @@ fn get_size_of_directory(file_path: &PathBuf) -> Result<(usize, bool), io::Error
 
         let file_type = metadata.unwrap().file_type();
 
-        if file_type.is_dir() && GLOBAL_THREAD_COUNT.load(Ordering::Relaxed) < MAX_THREADS {
+        if file_type.is_dir() && GLOBAL_THREAD_COUNT.load(Ordering::Relaxed) < MAX_THREAD_COUNT.load(Ordering::Relaxed) {
             GLOBAL_THREAD_COUNT.fetch_add(1, Ordering::Relaxed);
 
             let handler: thread::JoinHandle<Result<(usize, bool), io::Error>> = thread::spawn(move || {
