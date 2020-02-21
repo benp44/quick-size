@@ -67,7 +67,7 @@ pub fn print_directory_entries(directory_entries: &Vec<DirectoryEntry>) -> io::R
 
     let full_graph_width = get_graph_width();
 
-    let entry = build_standard_entry_string(
+    let entry = build_output_string(
         true,
         &TOTAL_NAME,
         &total_size.to_string(),
@@ -85,7 +85,7 @@ pub fn print_directory_entries(directory_entries: &Vec<DirectoryEntry>) -> io::R
 
     for (_, print_entry) in output_data_entries.iter().rev()
     {
-        let entry = build_standard_entry_string(
+        let entry = build_output_string(
             print_entry.is_directory,
             &print_entry.file_name,
             &print_entry.file_size_string,
@@ -145,7 +145,7 @@ fn build_graph_string(
     graph
 }
 
-fn build_standard_entry_string(
+fn build_output_string(
     is_directory: bool,
     file_name: &str,
     file_size_string: &str,
