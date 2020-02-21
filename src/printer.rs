@@ -67,19 +67,25 @@ pub fn print_directory_entries(directory_entries: &Vec<DirectoryEntry>) -> io::R
 
     let full_graph_width = get_graph_width();
 
-    print_summary_entry(
+    let entry = build_standard_entry_string(
+        true,
+        &TOTAL_NAME,
+        &total_size.to_string(),
         total_is_fully_scanned,
         total_size,
         &total_size_readable,
+        total_size,
         full_graph_width,
         longest_name,
         longest_size,
         longest_size_readable,
     );
 
+    println!("{}", entry);
+
     for (_, output_entry) in output_data_entries.iter().rev()
     {
-        print_entry(
+        let entry = build_standard_entry_string(
             output_entry.is_directory,
             &output_entry.file_name,
             &output_entry.file_size_string,
@@ -92,6 +98,8 @@ pub fn print_directory_entries(directory_entries: &Vec<DirectoryEntry>) -> io::R
             longest_size,
             longest_size_readable,
         );
+
+        println!("{}", entry);
     }
 
     Ok(())
@@ -107,17 +115,17 @@ fn get_graph_width() -> usize
     }
 }
 
-fn build_graph(
+fn build_graph_string(
     file_size: usize,
     total_size: usize,
-    full_graph_width: usize,
+    print_width: usize,
     start_char: char,
     line_char: char,
     end_char: char,
 ) -> String
 {
     let proportion = file_size as f64 / total_size as f64;
-    let length_f = proportion * full_graph_width as f64;
+    let length_f = proportion * print_width as f64;
     let length = length_f.floor() as usize;
 
     let mut graph = String::new();
@@ -137,37 +145,7 @@ fn build_graph(
     graph
 }
 
-fn print_summary_entry(
-    is_fully_scanned: bool,
-    total_size: usize,
-    total_size_readable: &str,
-    full_graph_width: usize,
-    longest_name: usize,
-    longest_size: usize,
-    longest_size_readable: usize,
-)
-{
-    let mut output_line = String::new();
-
-    output_line += &format!("{:name_width$} ", TOTAL_NAME, name_width = longest_name).bold().to_string();
-    output_line += &format!("{:>size_width$} ", total_size, size_width = longest_size);
-
-    if is_fully_scanned
-    {
-        output_line += "  ";
-    }
-    else
-    {
-        output_line += &"? ".red().to_string();
-    }
-
-    output_line += &format!("{:>size_readable_width$}", total_size_readable, size_readable_width = longest_size_readable);
-    output_line += &format!("{} ", build_graph(total_size, total_size, full_graph_width, '▕', '━', '▏'));
-
-    println!("{}", output_line.white().to_string());
-}
-
-fn print_entry(
+fn build_standard_entry_string(
     is_directory: bool,
     file_name: &str,
     file_size_string: &str,
@@ -175,24 +153,24 @@ fn print_entry(
     file_size: usize,
     file_size_readable: &str,
     total_size: usize,
-    full_graph_width: usize,
-    longest_name: usize,
-    longest_size: usize,
-    longest_size_readable: usize,
-)
+    print_width_graph: usize,
+    print_width_name: usize,
+    print_width_size: usize,
+    print_width_size_readable: usize,
+) -> String
 {
     let mut output_line = String::new();
 
     if is_directory
     {
-        output_line += &format!("{:name_width$} ", file_name, name_width = longest_name).yellow().bold().to_string();
+        output_line += &format!("{:name_width$} ", file_name, name_width = print_width_name).yellow().bold().to_string();
     }
     else
     {
-        output_line += &format!("{:name_width$} ", file_name, name_width = longest_name);
+        output_line += &format!("{:name_width$} ", file_name, name_width = print_width_name);
     }
 
-    output_line += &format!("{:>size_width$} ", file_size_string, size_width = longest_size);
+    output_line += &format!("{:>size_width$} ", file_size_string, size_width = print_width_size);
 
     if is_fully_scanned
     {
@@ -203,8 +181,8 @@ fn print_entry(
         output_line += &"? ".red().to_string();
     }
 
-    output_line += &format!("{:>size_readable_width$}", file_size_readable, size_readable_width = longest_size_readable);
-    output_line += &format!("{} ", build_graph(file_size, total_size, full_graph_width, '▕', '─', '▏'));
+    output_line += &format!("{:>size_readable_width$}", file_size_readable, size_readable_width = print_width_size_readable);
+    output_line += &format!("{} ", build_graph_string(file_size, total_size, print_width_graph, '▕', '─', '▏'));
 
-    println!("{}", output_line);
+    output_line
 }
