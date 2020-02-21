@@ -12,7 +12,10 @@ pub struct OutputEntry
 
 impl PartialEq<OutputEntry> for OutputEntry
 {
-    fn eq(&self, other: &Self) -> bool
+    fn eq(
+        &self,
+        other: &Self,
+    ) -> bool
     {
         self.file_name == other.file_name
     }

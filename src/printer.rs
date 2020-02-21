@@ -34,7 +34,8 @@ pub fn print_directory_entries(directory_entries: &Vec<DirectoryEntry>) -> io::R
         allow_negative: true,
     };
 
-    for directory_entry in directory_entries {
+    for directory_entry in directory_entries
+    {
         let name = directory_entry.file_name.to_string();
         let size = directory_entry.file_size;
         let size_readable = directory_entry.file_size.file_size(&human_readable_options).unwrap();
@@ -76,7 +77,8 @@ pub fn print_directory_entries(directory_entries: &Vec<DirectoryEntry>) -> io::R
         longest_size_readable,
     );
 
-    for (_, output_entry) in output_data_entries.iter().rev() {
+    for (_, output_entry) in output_data_entries.iter().rev()
+    {
         print_entry(
             output_entry.is_directory,
             &output_entry.file_name,
@@ -98,13 +100,21 @@ pub fn print_directory_entries(directory_entries: &Vec<DirectoryEntry>) -> io::R
 fn get_graph_width() -> usize
 {
     let result = term_size::dimensions();
-    match result {
+    match result
+    {
         Some((terminal_width, _)) => (terminal_width / 3) as usize,
         None => 20 as usize,
     }
 }
 
-fn build_graph(file_size: usize, total_size: usize, full_graph_width: usize, start_char: char, line_char: char, end_char: char) -> String
+fn build_graph(
+    file_size: usize,
+    total_size: usize,
+    full_graph_width: usize,
+    start_char: char,
+    line_char: char,
+    end_char: char,
+) -> String
 {
     let proportion = file_size as f64 / total_size as f64;
     let length_f = proportion * full_graph_width as f64;
@@ -114,27 +124,40 @@ fn build_graph(file_size: usize, total_size: usize, full_graph_width: usize, sta
 
     graph.push(start_char);
 
-    for _ in 0..length {
+    for _ in 0..length
+    {
         graph.push(line_char);
     }
 
-    if length != 0 {
+    if length != 0
+    {
         graph.push(end_char);
     }
 
     graph
 }
 
-fn print_summary_entry(is_fully_scanned: bool, total_size: usize, total_size_readable: &str, full_graph_width: usize, longest_name: usize, longest_size: usize, longest_size_readable: usize)
+fn print_summary_entry(
+    is_fully_scanned: bool,
+    total_size: usize,
+    total_size_readable: &str,
+    full_graph_width: usize,
+    longest_name: usize,
+    longest_size: usize,
+    longest_size_readable: usize,
+)
 {
     let mut output_line = String::new();
 
     output_line += &format!("{:name_width$} ", TOTAL_NAME, name_width = longest_name).bold().to_string();
     output_line += &format!("{:>size_width$} ", total_size, size_width = longest_size);
 
-    if is_fully_scanned {
+    if is_fully_scanned
+    {
         output_line += "  ";
-    } else {
+    }
+    else
+    {
         output_line += &"? ".red().to_string();
     }
 
@@ -160,17 +183,23 @@ fn print_entry(
 {
     let mut output_line = String::new();
 
-    if is_directory {
+    if is_directory
+    {
         output_line += &format!("{:name_width$} ", file_name, name_width = longest_name).yellow().bold().to_string();
-    } else {
+    }
+    else
+    {
         output_line += &format!("{:name_width$} ", file_name, name_width = longest_name);
     }
 
     output_line += &format!("{:>size_width$} ", file_size_string, size_width = longest_size);
 
-    if is_fully_scanned {
+    if is_fully_scanned
+    {
         output_line += "  ";
-    } else {
+    }
+    else
+    {
         output_line += &"? ".red().to_string();
     }
 

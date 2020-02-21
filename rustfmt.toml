@@ -1,2 +1,4 @@
 brace_style = "AlwaysNextLine"
+control_brace_style = "AlwaysNextLine"
 max_width = 200
+fn_args_layout = "Vertical"
