@@ -59,30 +59,34 @@ pub fn print_directory_entries(directory_entries: &Vec<DirectoryEntry>) -> io::R
         total_is_fully_scanned &= directory_entry.is_fully_scanned;
     }
 
-    let total_size_string = total_size.to_string();
-    let total_size_readable = total_size.file_size(&human_readable_options).unwrap();
-
-    longest_name = cmp::max(longest_name, TOTAL_NAME.len());
-    longest_size = cmp::max(longest_size, total_size.to_string().len());
-    longest_size_readable = cmp::max(longest_size_readable, total_size_readable.len());
-
     let full_graph_width = get_graph_width();
 
-    let entry = build_output_string(
-        true,
-        &TOTAL_NAME,
-        &total_size_string,
-        total_is_fully_scanned,
-        total_size,
-        &total_size_readable,
-        total_size,
-        full_graph_width,
-        longest_name,
-        longest_size,
-        longest_size_readable,
-    );
+    let show_total_size = true;
+    
+    if show_total_size {
+        let total_size_string = total_size.to_string();
+        let total_size_readable = total_size.file_size(&human_readable_options).unwrap();
 
-    println!("{}", entry);
+        longest_name = cmp::max(longest_name, TOTAL_NAME.len());
+        longest_size = cmp::max(longest_size, total_size.to_string().len());
+        longest_size_readable = cmp::max(longest_size_readable, total_size_readable.len());
+
+        let entry = build_output_string(
+            true,
+            &TOTAL_NAME,
+            &total_size_string,
+            total_is_fully_scanned,
+            total_size,
+            &total_size_readable,
+            total_size,
+            full_graph_width,
+            longest_name,
+            longest_size,
+            longest_size_readable,
+        );
+
+        println!("{}", entry);
+    }
 
     for (_, print_entry) in output_data_entries.iter().rev()
     {
