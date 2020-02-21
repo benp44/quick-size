@@ -59,6 +59,7 @@ pub fn print_directory_entries(directory_entries: &Vec<DirectoryEntry>) -> io::R
         total_is_fully_scanned &= directory_entry.is_fully_scanned;
     }
 
+    let total_size_string = total_size.to_string();
     let total_size_readable = total_size.file_size(&human_readable_options).unwrap();
 
     longest_name = cmp::max(longest_name, TOTAL_NAME.len());
@@ -70,7 +71,7 @@ pub fn print_directory_entries(directory_entries: &Vec<DirectoryEntry>) -> io::R
     let entry = build_output_string(
         true,
         &TOTAL_NAME,
-        &total_size.to_string(),
+        &total_size_string,
         total_is_fully_scanned,
         total_size,
         &total_size_readable,
