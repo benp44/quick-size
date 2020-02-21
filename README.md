@@ -1,5 +1,7 @@
 # quick-size
 
+![Rust](https://github.com/benp44/quick-size/workflows/Rust/badge.svg)
+
 Tool for quickly finding the size of all subdirectories and files in a directory.
 
 Written in Rust.
