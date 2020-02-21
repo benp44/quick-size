@@ -1,5 +1,5 @@
 use super::directory_entry::DirectoryEntry;
-use super::output_entry::OutputEntry;
+use super::print_entry::PrintEntry;
 use colored::*;
 use humansize::file_size_opts::{FileSizeOpts, FixedAt, Kilo};
 use humansize::FileSize;
@@ -9,7 +9,7 @@ use std::io;
 use std::vec::Vec;
 use term_size;
 
-const TOTAL_NAME: &str = "Total";
+const TOTAL_NAME: &str = ".";
 
 pub fn print_directory_entries(directory_entries: &Vec<DirectoryEntry>) -> io::Result<()>
 {
@@ -20,7 +20,7 @@ pub fn print_directory_entries(directory_entries: &Vec<DirectoryEntry>) -> io::R
     let mut total_size = 0;
     let mut total_is_fully_scanned = true;
 
-    let mut output_data_entries: SortedList<usize, OutputEntry> = SortedList::new();
+    let mut output_data_entries: SortedList<usize, PrintEntry> = SortedList::new();
 
     let human_readable_options = FileSizeOpts {
         divider: Kilo::Binary,
@@ -40,7 +40,7 @@ pub fn print_directory_entries(directory_entries: &Vec<DirectoryEntry>) -> io::R
         let size = directory_entry.file_size;
         let size_readable = directory_entry.file_size.file_size(&human_readable_options).unwrap();
 
-        let entry = OutputEntry {
+        let entry = PrintEntry {
             file_name: name,
             is_directory: directory_entry.is_directory,
             file_size: size,
@@ -83,15 +83,15 @@ pub fn print_directory_entries(directory_entries: &Vec<DirectoryEntry>) -> io::R
 
     println!("{}", entry);
 
-    for (_, output_entry) in output_data_entries.iter().rev()
+    for (_, print_entry) in output_data_entries.iter().rev()
     {
         let entry = build_standard_entry_string(
-            output_entry.is_directory,
-            &output_entry.file_name,
-            &output_entry.file_size_string,
-            output_entry.is_fully_scanned,
-            output_entry.file_size,
-            &output_entry.file_size_readable,
+            print_entry.is_directory,
+            &print_entry.file_name,
+            &print_entry.file_size_string,
+            print_entry.is_fully_scanned,
+            print_entry.file_size,
+            &print_entry.file_size_readable,
             total_size,
             full_graph_width,
             longest_name,

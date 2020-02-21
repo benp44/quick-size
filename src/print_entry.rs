@@ -1,6 +1,6 @@
 use std::cmp::PartialEq;
 
-pub struct OutputEntry
+pub struct PrintEntry
 {
     pub file_name: String,
     pub is_directory: bool,
@@ -10,7 +10,7 @@ pub struct OutputEntry
     pub is_fully_scanned: bool,
 }
 
-impl PartialEq<OutputEntry> for OutputEntry
+impl PartialEq<PrintEntry> for PrintEntry
 {
     fn eq(
         &self,
