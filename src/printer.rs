@@ -72,39 +72,35 @@ pub fn print_directory_entries(directory_entries: &Vec<DirectoryEntry>) -> io::R
         longest_size_readable = cmp::max(longest_size_readable, total_size_readable.len());
 
         let entry = build_output_string(
-            true,
             &TOTAL_NAME,
+            true,
             &total_size_string,
+            &total_size_readable,            
             total_is_fully_scanned,
-            total_size,
-            &total_size_readable,
-            total_size,
-            full_graph_width,
             longest_name,
             longest_size,
             longest_size_readable,
         );
 
-        println!("{}", entry);
+        print!("{}", entry);
+        println!("{}", build_graph_string(total_size, total_size, full_graph_width, '▕', '─', '▏'));        
     }
 
     for (_, print_entry) in output_data_entries.iter().rev()
     {
         let entry = build_output_string(
-            print_entry.is_directory,
             &print_entry.file_name,
+            print_entry.is_directory,
             &print_entry.file_size_string,
-            print_entry.is_fully_scanned,
-            print_entry.file_size,
             &print_entry.file_size_readable,
-            total_size,
-            full_graph_width,
+            print_entry.is_fully_scanned,
             longest_name,
             longest_size,
             longest_size_readable,
         );
 
-        println!("{}", entry);
+        print!("{}", entry);
+        println!("{}", build_graph_string(print_entry.file_size, total_size, full_graph_width, '▕', '─', '▏'));
     }
 
     Ok(())
@@ -151,14 +147,11 @@ fn build_graph_string(
 }
 
 fn build_output_string(
-    is_directory: bool,
     file_name: &str,
+    is_directory: bool,
     file_size_string: &str,
-    is_fully_scanned: bool,
-    file_size: usize,
     file_size_readable: &str,
-    total_size: usize,
-    print_width_graph: usize,
+    is_fully_scanned: bool,
     print_width_name: usize,
     print_width_size: usize,
     print_width_size_readable: usize,
@@ -168,26 +161,107 @@ fn build_output_string(
 
     if is_directory
     {
-        output_line += &format!("{:name_width$} ", file_name, name_width = print_width_name).yellow().bold().to_string();
+        output_line += &format!("{:name_width$}", file_name, name_width = print_width_name).yellow().bold().to_string();
     }
     else
     {
-        output_line += &format!("{:name_width$} ", file_name, name_width = print_width_name);
+        output_line += &format!("{:name_width$}", file_name, name_width = print_width_name);
     }
 
-    output_line += &format!("{:>size_width$} ", file_size_string, size_width = print_width_size);
+    output_line += " ";
+
+    output_line += &format!("{:>size_width$}", file_size_string, size_width = print_width_size);
+    output_line += " ";
 
     if is_fully_scanned
     {
-        output_line += "  ";
+        output_line += " ";
     }
     else
     {
-        output_line += &"? ".red().to_string();
+        output_line += &"?".red().to_string();
     }
 
+    output_line += " ";
+
     output_line += &format!("{:>size_readable_width$}", file_size_readable, size_readable_width = print_width_size_readable);
-    output_line += &format!("{} ", build_graph_string(file_size, total_size, print_width_graph, '▕', '─', '▏'));
 
     output_line
+}
+
+#[cfg(test)]
+mod test_printing_entries 
+{
+    use super::build_output_string;
+    use colored::*;
+
+    #[test]
+    fn basic_directory() 
+    {
+        let entry = build_output_string(
+            &"hello",
+            true,
+            &"1024",
+            &"1024 B",
+            true,
+            10,
+            10,
+            10,
+        );
+
+        assert_eq!(format!("{} {} {} {}", "hello     ".yellow().bold(),"      1024", " ", "    1024 B"), entry);
+    }
+
+    #[test]
+    fn uncertain_size() 
+    {
+        let entry = build_output_string(
+            &"a",
+            false,
+            &"1",
+            &"1 B",
+            false,
+            1,
+            1,
+            3,
+        );
+
+        assert_eq!(format!("{} {} {} {}", "a","1", "?".red(), "1 B"), entry);
+    }
+}
+
+#[cfg(test)]
+mod test_printing_graphs 
+{
+    use super::build_graph_string;
+
+    #[test]
+    fn empty_graph() 
+    {
+        assert_eq!("▕", build_graph_string(0, 10, 10, '▕', '─', '▏'));
+    }
+
+    #[test]
+    fn no_width() 
+    {
+        assert_eq!("▕", build_graph_string(5, 10, 0, '▕', '─', '▏'));
+    }
+
+    #[test]
+    fn full_graph() 
+    {
+        assert_eq!("▕──────────▏", build_graph_string(10, 10, 10, '▕', '─', '▏'));
+    }
+
+    #[test]
+    fn half_graph() 
+    {
+        assert_eq!("▕─────▏", build_graph_string(5, 10, 10, '▕', '─', '▏'));
+    }
+
+    #[test]
+    fn data_floored() 
+    {
+        assert_eq!("▕────▏", build_graph_string(21, 100, 20, '▕', '─', '▏'));
+    }
 }
