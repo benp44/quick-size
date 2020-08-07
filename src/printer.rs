@@ -189,8 +189,23 @@ fn build_output_string(
     output_line
 }
 
+// #[cfg(test)]
+// mod test_printing_entries
+// {
+//     use super::print_directory_entries;
+//     use colored::*;
+
+//     #[test]
+//     fn basic_directory() 
+//     {
+//         let results = Vec<DirectoryEntry>::New();
+
+//         print_directory_entries
+//     }
+// }
+
 #[cfg(test)]
-mod test_printing_entries 
+mod test_printing_entry 
 {
     use super::build_output_string;
     use colored::*;
